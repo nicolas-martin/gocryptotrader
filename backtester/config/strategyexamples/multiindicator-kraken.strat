@@ -1,0 +1,83 @@
+{
+ "nickname": "MultiIndicator-Kraken",
+ "goal": "Multi-indicator strategy for Kraken spot trading using EMA, RSI, Bollinger Bands, and OBV",
+ "strategy-settings": {
+  "name": "multiindicator",
+  "use-simultaneous-signal-processing": true,
+  "disable-usd-tracking": false,
+  "custom-settings": {
+   "ema-fast-period": 12,
+   "ema-slow-period": 26,
+   "rsi-period": 14,
+   "rsi-long-trigger": 40,
+   "rsi-exit-overbought": 70,
+   "bb-period": 20,
+   "bb-std-dev": 2.0,
+   "obv-smooth-period": 10,
+   "lookback-periods": 20
+  }
+ },
+ "funding-settings": {
+  "use-exchange-level-funding": false
+ },
+ "currency-settings": [
+  {
+   "exchange-name": "kraken",
+   "asset": "spot",
+   "base": "SOL",
+   "quote": "USD",
+   "spot-details": {
+    "initial-quote-funds": "10000"
+   },
+   "buy-side": {
+    "minimum-size": "0.1",
+    "maximum-size": "2",
+    "maximum-total": "5000"
+   },
+   "sell-side": {
+    "minimum-size": "0.1", 
+    "maximum-size": "2",
+    "maximum-total": "5000"
+   },
+   "min-slippage-percent": "0",
+   "max-slippage-percent": "0.1",
+   "maker-fee-override": "0.0016",
+   "taker-fee-override": "0.0026",
+   "maximum-holdings-ratio": "0.6",
+   "skip-candle-volume-fitting": false,
+   "use-exchange-order-limits": true,
+   "use-exchange-pnl-calculation": false
+  }
+ ],
+ "data-settings": {
+  "interval": 86400000000000,
+  "data-type": "candle",
+  "verbose-exchange-requests": false,
+  "api-data": {
+   "start-date": "2024-01-01T00:00:00Z",
+   "end-date": "2025-01-08T00:00:00Z",
+   "inclusive-end-date": false
+  }
+ },
+ "portfolio-settings": {
+  "leverage": {
+   "can-use-leverage": false,
+   "maximum-orders-with-leverage-ratio": "0",
+   "maximum-leverage-rate": "0",
+   "maximum-collateral-leverage-rate": "0"
+  },
+  "buy-side": {
+   "minimum-size": "1",
+   "maximum-size": "500",
+   "maximum-total": "5000"
+  },
+  "sell-side": {
+   "minimum-size": "1",
+   "maximum-size": "500", 
+   "maximum-total": "5000"
+  }
+ },
+ "statistic-settings": {
+  "risk-free-rate": "0.03"
+ }
+}

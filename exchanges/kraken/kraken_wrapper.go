@@ -144,7 +144,7 @@ func (e *Exchange) SetDefaults() {
 					kline.IntervalCapacity{Interval: kline.OneWeek},
 					kline.IntervalCapacity{Interval: kline.FifteenDay},
 				),
-				GlobalResultLimit: 720,
+				GlobalResultLimit: 1500,
 			},
 		},
 		Subscriptions: defaultSubscriptions.Clone(),
@@ -1470,8 +1470,8 @@ func (e *Exchange) GetHistoricCandles(ctx context.Context, pair currency.Pair, a
 }
 
 // GetHistoricCandlesExtended returns candles between a time period for a set time interval
-func (e *Exchange) GetHistoricCandlesExtended(_ context.Context, _ currency.Pair, _ asset.Item, _ kline.Interval, _, _ time.Time) (*kline.Item, error) {
-	return nil, common.ErrFunctionNotSupported
+func (e *Exchange) GetHistoricCandlesExtended(ctx context.Context, pair currency.Pair, a asset.Item, interval kline.Interval, start, end time.Time) (*kline.Item, error) {
+	return e.GetHistoricCandles(ctx, pair, a, interval, start, end)
 }
 
 func compatibleOrderSide(side string) (order.Side, error) {

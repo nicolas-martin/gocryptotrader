@@ -1,0 +1,140 @@
+fmt := import("fmt")
+exch := import("exchange")
+t := import("times")
+ema := import("indicator/ema")
+rsi := import("indicator/rsi")
+bbands := import("indicator/bbands")
+obv := import("indicator/obv")
+
+load := func() {
+    // Demo of multi-indicator analysis for BTC-USD on Kraken
+    start := t.date(2023, 1, 1, 0, 0, 0, 0)
+    end := t.date(2023, 3, 1, 0, 0, 0, 0)
+    
+    // Fetch OHLCV data for analysis
+    ohlcvData := exch.ohlcv(ctx, "kraken", "BTC-USD", "-", "SPOT", start, end, "5m")
+    if is_error(ohlcvData) {
+        fmt.println("Error fetching data:", ohlcvData)
+        return
+    }
+    
+    fmt.println("=== Multi-Indicator Analysis for BTC-USD ===")
+    fmt.println("Data points:", len(ohlcvData.candles))
+    
+    if len(ohlcvData.candles) < 200 {
+        fmt.println("Insufficient data for analysis (need 200+ periods)")
+        return
+    }
+    
+    // Calculate indicators
+    ema50 := ema.calculate(ohlcvData.candles, 50)
+    ema200 := ema.calculate(ohlcvData.candles, 200)
+    rsi14 := rsi.calculate(ohlcvData.candles, 14)
+    bb := bbands.calculate("close", ohlcvData.candles, 20, 2.0, 2.0, "sma")
+    obvData := obv.calculate(ohlcvData.candles)
+    
+    if is_error(ema50) || is_error(ema200) || is_error(rsi14) || is_error(bb) || is_error(obvData) {
+        fmt.println("Error calculating indicators")
+        return
+    }
+    
+    // Display latest values
+    latestIdx := len(ohlcvData.candles) - 1
+    latestCandle := ohlcvData.candles[latestIdx]
+    
+    fmt.println("\n=== Latest Indicator Values ===")
+    fmt.printf("Close Price: %.2f\n", latestCandle[4])  // Close price
+    fmt.printf("EMA 50: %.2f\n", ema50[len(ema50)-1])
+    fmt.printf("EMA 200: %.2f\n", ema200[len(ema200)-1])
+    fmt.printf("RSI(14): %.2f\n", rsi14[len(rsi14)-1])
+    
+    // Bollinger Bands analysis
+    latestBB := bb[len(bb)-1]
+    fmt.printf("BB Upper: %.2f\n", latestBB[1])
+    fmt.printf("BB Middle: %.2f\n", latestBB[0])
+    fmt.printf("BB Lower: %.2f\n", latestBB[2])
+    
+    fmt.printf("OBV: %.0f\n", obvData[len(obvData)-1])
+    
+    // Multi-indicator signal analysis
+    fmt.println("\n=== Signal Analysis ===")
+    
+    // Trend analysis
+    trendUp := ema50[len(ema50)-1] > ema200[len(ema200)-1]
+    fmt.printf("Trend (EMA50 > EMA200): %s\n", trendUp ? "BULLISH" : "BEARISH")
+    
+    // RSI analysis
+    currentRSI := rsi14[len(rsi14)-1]
+    rsiOversold := currentRSI <= 30
+    rsiOverbought := currentRSI >= 70
+    rsiNeutral := currentRSI > 30 && currentRSI < 70
+    
+    fmt.printf("RSI Status: ")
+    if rsiOversold {
+        fmt.println("OVERSOLD (potential buy)")
+    } else if rsiOverbought {
+        fmt.println("OVERBOUGHT (potential sell)")
+    } else {
+        fmt.println("NEUTRAL")
+    }
+    
+    // Bollinger Bands position
+    currentPrice := latestCandle[4]
+    bbUpper := latestBB[1]
+    bbMiddle := latestBB[0]
+    bbLower := latestBB[2]
+    
+    fmt.printf("BB Position: ")
+    if currentPrice > bbUpper {
+        fmt.println("Above upper band (overbought)")
+    } else if currentPrice < bbLower {
+        fmt.println("Below lower band (oversold)")
+    } else if currentPrice > bbMiddle {
+        fmt.println("Above middle (bullish zone)")
+    } else {
+        fmt.println("Below middle (bearish zone)")
+    }
+    
+    // Volume confirmation
+    if len(obvData) > 1 {
+        obvSlope := obvData[len(obvData)-1] - obvData[len(obvData)-2]
+        fmt.printf("OBV Trend: %s\n", obvSlope > 0 ? "RISING (bullish)" : "FALLING (bearish)")
+    }
+    
+    // Multi-indicator entry signal (simplified version of our strategy)
+    fmt.println("\n=== Multi-Indicator Entry Signal ===")
+    
+    // Check for long entry conditions
+    longConditions := []bool{
+        trendUp,                                    // EMA trend up
+        currentRSI > 40 && !rsiOverbought,         // RSI in acceptable range
+        currentPrice > bbMiddle,                   // Above BB middle
+        len(obvData) > 1 && obvData[len(obvData)-1] > obvData[len(obvData)-2], // OBV rising
+    }
+    
+    longScore := 0
+    conditionNames := ["Trend", "RSI", "Structure", "Volume"]
+    
+    for i := 0; i < len(longConditions); i++ {
+        fmt.printf("%s: %s\n", conditionNames[i], longConditions[i] ? "✓" : "✗")
+        if longConditions[i] {
+            longScore++
+        }
+    }
+    
+    fmt.printf("\nSignal Strength: %d/4\n", longScore)
+    
+    if longScore == 4 {
+        fmt.println("🟢 STRONG LONG SIGNAL - All conditions met")
+    } else if longScore >= 3 {
+        fmt.println("🟡 MODERATE LONG SIGNAL - Most conditions met")
+    } else if longScore >= 2 {
+        fmt.println("🟠 WEAK SIGNAL - Some conditions met")
+    } else {
+        fmt.println("🔴 NO SIGNAL - Conditions not favorable")
+    }
+    
+    fmt.println("\n=== Analysis Complete ===")
+}
+
+load()
