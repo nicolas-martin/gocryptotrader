@@ -104,6 +104,9 @@
 						<a class="nav-link" href="#orders">Orders</a>
 					</li>
 					<li class="nav-item">
+						<a class="nav-link" href="#spot-trades">Spot Trades P&L</a>
+					</li>
+					<li class="nav-item">
 						<a class="nav-link" href="#events">Events</a>
 					</li>
 					<li class="nav-item">
@@ -1684,6 +1687,68 @@
 							</tbody>
 						</table>
 					</div>
+				{{end}}
+			</div>
+		</div>
+
+		<div class="card card-cascade narrower">
+			<div class="view view-cascade bg-info">
+				<h2 id="spot-trades" class="px-4 card-header-title text-light">Spot Trades P&L</h2>
+			</div>
+			<div class="card-body card-body-cascade">
+				{{ range $key, $val := .Statistics.ExchangeAssetPairStatistics}}
+					{{ if and (eq $key.Asset.String "spot") $val.SpotTrades }}
+						<div>
+							<h3>{{$key.Exchange}} {{$key.Asset}} {{ $key.Base }}-{{$key.Quote}}</h3>
+						</div>
+						<div>
+							<table class="table table-hover table-bordered table-striped">
+								<thead>
+									<tr>
+										<th>Trade #</th>
+										<th>Buy Time</th>
+										<th>Buy Price</th>
+										<th>Sell Time</th>
+										<th>Sell Price</th>
+										<th>Amount</th>
+										<th>Gross P&L</th>
+										<th>Fees</th>
+										<th>Net P&L</th>
+									</tr>
+								</thead>
+								<tbody>
+								{{ $totalNetPNL := 0.0 }}
+								{{ $totalFees := 0.0 }}
+								{{range $trade := $val.SpotTrades}}
+									<tr class="{{ if $trade.NetPNL.IsPositive }}table-success{{ else if $trade.NetPNL.IsNegative }}table-danger{{ end }}">
+										<td>{{ $trade.TradeNumber }}</td>
+										<td>{{ $trade.BuyTime.Format "2006-01-02 15:04:05" }}</td>
+										<td>{{ $.Prettify.Decimal8 $trade.BuyPrice }} {{$key.Quote}}</td>
+										<td>{{ $trade.SellTime.Format "2006-01-02 15:04:05" }}</td>
+										<td>{{ $.Prettify.Decimal8 $trade.SellPrice }} {{$key.Quote}}</td>
+										<td>{{ $.Prettify.Decimal8 $trade.BuyAmount }} {{$key.Base}}</td>
+										<td class="{{ if $trade.GrossPNL.IsPositive }}text-success{{ else if $trade.GrossPNL.IsNegative }}text-danger{{ end }}">
+											{{ $.Prettify.Decimal8 $trade.GrossPNL }} {{$key.Quote}}
+										</td>
+										<td>{{ $.Prettify.Decimal8 $trade.FeeTotal }} {{$key.Quote}}</td>
+										<td class="{{ if $trade.NetPNL.IsPositive }}text-success{{ else if $trade.NetPNL.IsNegative }}text-danger{{ end }}">
+											<strong>{{ $.Prettify.Decimal8 $trade.NetPNL }} {{$key.Quote}}</strong>
+										</td>
+									</tr>
+								{{end}}
+								</tbody>
+							</table>
+							<div class="alert alert-info mt-3">
+								<strong>Summary:</strong> 
+								Total Trades: {{ len $val.SpotTrades }}
+							</div>
+						</div>
+					{{ else if eq $key.Asset.String "spot" }}
+						<div>
+							<h3>{{$key.Exchange}} {{$key.Asset}} {{ $key.Base }}-{{$key.Quote}}</h3>
+							<p class="text-muted">No completed spot trades to display</p>
+						</div>
+					{{end}}
 				{{end}}
 			</div>
 		</div>

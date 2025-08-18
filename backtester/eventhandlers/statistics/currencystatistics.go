@@ -3,6 +3,7 @@ package statistics
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/thrasher-corp/gocryptotrader/backtester/data"
@@ -128,6 +129,12 @@ func (c *CurrencyPairStatistic) CalculateResults(riskFreeRate decimal.Decimal) e
 		c.UnrealisedPNL = last.PNL.GetUnrealisedPNL().PNL
 		c.RealisedPNL = last.PNL.GetRealisedPNL().PNL
 	}
+	
+	// Calculate spot trade PnL if this is a spot asset
+	if c.Asset == asset.Spot {
+		c.calculateSpotTradePNL()
+	}
+	
 	return errs
 }
 
@@ -197,4 +204,71 @@ func (c *CurrencyPairStatistic) analysePNLGrowth() {
 	c.LowestUnrealisedPNL = lowestUnrealised
 	c.HighestUnrealisedPNL = highestUnrealised
 	c.HighestRealisedPNL = highestRealised
+}
+
+// calculateSpotTradePNL matches buy and sell orders to calculate individual trade P&L
+func (c *CurrencyPairStatistic) calculateSpotTradePNL() {
+	c.SpotTrades = []SpotTradePNL{}
+	
+	type pendingBuy struct {
+		time   time.Time
+		price  decimal.Decimal
+		amount decimal.Decimal
+		fee    decimal.Decimal
+	}
+	
+	var pendingBuys []pendingBuy
+	tradeNumber := 0
+	
+	for i := range c.Events {
+		// Look for fill events which represent executed orders
+		if c.Events[i].FillEvent == nil {
+			continue
+		}
+		
+		fillEvent := c.Events[i].FillEvent
+		orderSide := fillEvent.GetDirection()
+		orderPrice := fillEvent.GetPurchasePrice()
+		orderAmount := fillEvent.GetAmount()
+		orderFee := fillEvent.GetExchangeFee()
+		
+		if orderSide == gctorder.Buy {
+			// Add to pending buys
+			pendingBuys = append(pendingBuys, pendingBuy{
+				time:   c.Events[i].Time,
+				price:  orderPrice,
+				amount: orderAmount,
+				fee:    orderFee,
+			})
+		} else if orderSide == gctorder.Sell && len(pendingBuys) > 0 {
+			// Match with oldest buy (FIFO)
+			buy := pendingBuys[0]
+			pendingBuys = pendingBuys[1:]
+			tradeNumber++
+			
+			// Calculate P&L
+			buyTotal := buy.price.Mul(buy.amount)
+			sellTotal := orderPrice.Mul(orderAmount)
+			grossPNL := sellTotal.Sub(buyTotal)
+			feeTotal := buy.fee.Add(orderFee)
+			netPNL := grossPNL.Sub(feeTotal)
+			
+			trade := SpotTradePNL{
+				TradeNumber: tradeNumber,
+				BuyTime:     buy.time,
+				BuyPrice:    buy.price,
+				BuyAmount:   buy.amount,
+				BuyFee:      buy.fee,
+				SellTime:    c.Events[i].Time,
+				SellPrice:   orderPrice,
+				SellAmount:  orderAmount,
+				SellFee:     orderFee,
+				GrossPNL:    grossPNL,
+				NetPNL:      netPNL,
+				FeeTotal:    feeTotal,
+			}
+			
+			c.SpotTrades = append(c.SpotTrades, trade)
+		}
+	}
 }

@@ -172,6 +172,8 @@ type CurrencyPairStatistic struct {
 	TotalValueLost               decimal.Decimal `json:"total-value-lost"`
 
 	Events []DataAtOffset `json:"-"`
+	
+	SpotTrades []SpotTradePNL `json:"spot-trades,omitempty"`
 
 	MaxDrawdown           Swing               `json:"max-drawdown"`
 	HighestCommittedFunds ValueAtTime         `json:"highest-committed-funds"`
@@ -203,6 +205,22 @@ type ValueAtTime struct {
 	Time  time.Time       `json:"time"`
 	Value decimal.Decimal `json:"value"`
 	Set   bool            `json:"-"`
+}
+
+// SpotTradePNL tracks the P&L for a completed spot trade (buy -> sell cycle)
+type SpotTradePNL struct {
+	TradeNumber  int             `json:"trade-number"`
+	BuyTime      time.Time       `json:"buy-time"`
+	BuyPrice     decimal.Decimal `json:"buy-price"`
+	BuyAmount    decimal.Decimal `json:"buy-amount"`
+	BuyFee       decimal.Decimal `json:"buy-fee"`
+	SellTime     time.Time       `json:"sell-time"`
+	SellPrice    decimal.Decimal `json:"sell-price"`
+	SellAmount   decimal.Decimal `json:"sell-amount"`
+	SellFee      decimal.Decimal `json:"sell-fee"`
+	GrossPNL     decimal.Decimal `json:"gross-pnl"`
+	NetPNL       decimal.Decimal `json:"net-pnl"`
+	FeeTotal     decimal.Decimal `json:"fee-total"`
 }
 
 type relatedCurrencyPairStatistics struct {
